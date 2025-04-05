@@ -1,0 +1,8 @@
+Michael Huang
+
+Short Answer:
+1. A way to implement locks
+2. Inmplementation of preemptive scheduling. Right now my LWP library only have
+cooperative scheduling.
+
+

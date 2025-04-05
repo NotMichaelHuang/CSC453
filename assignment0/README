@@ -1,0 +1,114 @@
+Michael Huang
+
+Part0:
+	fork_loops:
+		Output: 0Yo!1Yo!Yo!2Yo!Yo!Yo!3Yo!Yo!Yo!Yo!4Yo!Yo!Yo!Yo!Yo!5Yo!Yo!Yo!Yo!Yo!5
+		Explaination:
+			Short answer, this has to due with when printf is flushed go stdout.
+			There are 4 the buffer is flushed to stdout. 
+				-newline "\n" in printf
+				-fflush(stdout)
+				-buffer hits ~4KB
+				-end of a process
+			We know the printf on line 11 (printf("YO!");) doesn't have a new line and
+			fflush is nowhere to be found. So it would have the be the second half of
+			the options. It is unlikely that we will hit the ~4KB buffer size limit
+			given the size of the code. Given that we could just assume the last option.
+			We know the child process will copy the buffer of the parent along with
+			other things. We know fork() will return 0 for the child process and given
+			&& in C shortcircuit, it will never enter the loop or check the second
+			condition. It is safe to say its only purpose is to print the i-th value along
+			with whatever was in the buffer from the parent at the time. Given that, now
+			we know why there are more than 1 YO!s per i-th value. The last 5 YO!s and 5
+			value was flushed by the parent process.
+
+Part 1:
+	who_runs_first.c	
+		printf:
+			Observation: 	
+				It seems like child will always run first prior to parent in ttys or at
+				all. Since line-buffer will flush with newline. But in file (fully buffered)
+				"parent\n" was never flushed hence each child is getting the gradual 
+				accumulation or parents. Hence, the prolific amount of "parent".
+
+			in ttys (line buffered):
+				all childparent
+
+			in file (fully buffered): 
+				1000 childparent
+				499500 parent
+
+		printf w/ fflush:
+			Observation:	
+				Since we are manually flushing right after printf(), we are getting mostly
+				parent child, assuming the OS scheduler doesn't time the parent process
+				out. I think some childparent are produced could be due to my
+				OS's scheduler putting the parent process in ready and giving the child process 
+				an opportunity to run and vice versa.
+
+				Another reason could be the once a parent process finished and the next
+				few spots are quened up by OS scheduler for child processes could also 
+				produce childparents.
+			
+			in file:
+				5 childparent
+				995 parentchild
+
+		write: 
+			Observation: 
+				It seems like the raw system call write is the same as prinf() with
+				fflush().	I would have to concur with my previous observation.
+			
+			in file:
+				2 childparent
+				998 parentchild
+
+		write w/ sleep for 1s:
+			Observation:
+				It semes like the sleep with the wait() is timing out the parent process
+				by the OS scheduler more which gives the disproportionate childparents v. parentchild.
+				Though, we know child process also has sleep(). but  the part of the code that
+				"belongs" to the parent has two waits. One for before the program 
+				write of "parent" and one before the program  write a newline.
+				
+			in file:
+				851 childparent
+				149 parentchild
+
+		write w/ sleep for 0.1s:
+			Observation:
+				It seems like even decreasing the time does not really change the result
+				significantly from the previous redition.
+
+			in file:
+				899 childparent
+				101 parentchild
+
+part2:
+  output:
+    1174517:   ./who_runs_first
+    000000555e050000      4K r-x-- who_runs_first
+    000000555e06f000      4K r---- who_runs_first
+    000000555e070000      4K rw--- who_runs_first
+    0000007f8a720000   1564K r-x-- libc.so.6
+    0000007f8a8a7000     84K ----- libc.so.6
+    0000007f8a8bc000     16K r---- libc.so.6
+    0000007f8a8c0000      8K rw--- libc.so.6
+    0000007f8a8c2000     52K rw---   [ anon ]
+    0000007f8a8d8000    156K r-x-- ld-linux-aarch64.so.1
+    0000007f8a911000      8K rw---   [ anon ]
+    0000007f8a913000      8K r----   [ anon ]
+    0000007f8a915000      4K r-x--   [ anon ]
+    0000007f8a916000      8K r---- ld-linux-aarch64.so.1
+    0000007f8a918000      8K rw--- ld-linux-aarch64.so.1
+    0000007fe9771000    132K rw---   [ stack ]
+     total             2060K
+
+  Observation:
+    We can see the address, size, and premission mapped to who_runs_first. We
+    could also see the same for the C library, anonymous memory, dynamic
+		linker/loader, etc. It seems like the total virtual memory is ~2MB. 
+		I think this these are the moving parts of what it takes to execute
+		who_runs_first.
+
+
