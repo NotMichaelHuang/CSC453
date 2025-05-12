@@ -1,0 +1,220 @@
+Michael Huang
+
+Side Note:
+	I took creative liberty to format my output as close to Professor Peterson's
+	Program 2 Test Cases as I 'personally' deemed comfortable.
+
+Quesitons:
+	1. For what types of workloads does SRTN deliver the same turnaround times as
+		 FIFO?
+
+		The type of workload that yeilds the same turn-around from SRTN in comparsion
+		to FCFS would be a list of processes that arrives in sequential order with a
+		linearly increasing burst. This makes the preemption ineffective.
+
+		Example:
+
+		FIFO
+		Process   Arrival   Burst
+		P0        T=0       1T
+		P1        T=1       1T
+		P2        T=2       2T
+		P3        T=3       3T
+		P4        T=4       4T
+		P5        T=5       5T
+		P6        T=6       6T
+
+
+
+		Process   Wait      Turn-around
+		P0        0T        1T
+		P1        0T        1T
+		P2        0T        2T
+		P3        1T        4T
+		P4        3T        7T
+		P5        6T        11T
+		P6        10T       16T
+
+
+
+		average wait:2.857142857142857
+		average turn around:6.0
+
+
+
+		ELABORATION
+		[P0][P1][P2][P2][P3][P3][P3][P4][P4][P4][P4][P5][P5][P5][P5][P5][P6][P6][P6][P6][P6][P6]
+		T=0             T=4             T=8             T=12            T=16						T=20
+
+		SRTN
+		Process   Arrival   Burst
+		P0        T=0       1T
+		P1        T=1       1T
+		P2        T=2       2T
+		P3        T=3       3T
+		P4        T=4       4T
+		P5        T=5       5T
+		P6        T=6       6T
+
+
+
+		Process   Wait      Turn-around
+		P0        0T        1T
+		P1        0T        1T
+		P2        0T        2T
+		P3        1T        4T
+		P4        3T        7T
+		P5        6T        11T
+		P6        10T       16T
+
+
+
+		average wait:2.857142857142857
+		average turn around:6.0
+
+
+
+		ELABORATION
+		[P0][P1][P2][P2][P3][P3][P3][P4][P4][P4][P4][P5][P5][P5][P5][P5][P6][P6][P6][P6][P6][P6]
+		T=0             T=4             T=8             T=12            T=16            T=20	
+
+	2. For what types of workloads and quantum lengths does SRTN deliver the same response times 
+		 as RR?
+
+		The quantum length for RR must be equal to or greater than the largest burst
+		time form the workload. In addition, all processes must arrive at the same time.
+		Given those two condition, RR acts exactly like SRTN. This also makes both
+		policies converge to FIFO.
+
+		Response time = Start time - Arrival time. Given the workloads all start at
+		T=0 and they behave like FIFO. Both Policies would yield the same response time
+		for their respected same processes.
+
+		Example:
+
+		SRTN
+		Process   Arrival   Burst
+		P0        T=0       2T
+		P1        T=0       1T
+		P2        T=0       3T
+
+
+
+		Process   Wait      Turn-around
+		P0        1T        3T
+		P1        0T        1T
+		P2        3T        6T
+
+
+
+		average wait:1.3333333333333333
+		average turn around:3.3333333333333335
+
+
+
+		ELABORATION
+		[P1][P0][P0][P2][P2][P2]
+		T=0             T=4
+
+		RR Q=3
+		Process   Arrival   Burst
+		P0        T=0       2T
+		P1        T=0       1T
+		P2        T=0       3T
+
+
+
+		Process   Wait      Turn-around
+		P0        1T        3T
+		P1        0T        1T
+		P2        3T        6T
+
+
+
+		average wait:1.3333333333333333
+		average turn around:3.3333333333333335
+
+
+
+		ELABORATION
+		[P1][P0][P0][P2][P2][P2]
+		T=0             T=4
+
+	3. What happens to response time with SRTN as job lengths increase? Can you use the 
+		 simulator to demonstrate the trend?
+		
+		As job lenghts increase so does their response time as the jobs with the
+		greatest burst are constantly being pushed to the end or the queue.
+
+		Example:
+
+		SRTN
+		Process   Arrival   Burst
+		P0        T=0       10T
+		P1        T=0       1T
+		P2        T=1       2T
+		P3        T=5       3T
+		P4        T=4       4T
+
+
+
+		Process   Wait      Turn-around
+		P0        10T       20T
+		P1        0T        1T
+		P2        0T        2T
+		P3        0T        3T
+		P4        3T        7T
+
+
+
+		average wait:2.6
+		average turn around:6.6
+
+
+
+		ELABORATION
+		[P1][P2][P2][P0][P4][P3][P3][P3][P4][P4][P4][P0][P0][P0][P0][P0][P0][P0][P0][P0]
+		T=0             T=4             T=8             T=12            T=16           
+
+	4. What happens to response time with RR as quantum lengths increase? Can you write 
+		an equation that gives the worst-case response time, given N jobs?
+
+		Assume quantum is an infinitely scalable constant and all jobs arrived at
+		the same time. The response time of the Jobs at the end will have a greater
+		reponse time in contrast to the jobs before it.
+
+		Equation: (N - 1) x q where N is the number of jobs and q is a quantum
+							constant
+
+		Example:
+		RR Q=10000000
+		Process   Arrival   Burst
+		P0        T=0       8T
+		P1        T=0       8T
+		P2        T=0       8T
+		P3        T=0       8T
+		P4        T=0       8T
+		P5        T=0       8T
+
+
+
+		Process   Wait      Turn-around
+		P0        0T        8T
+		P1        8T        16T
+		P2        16T       24T
+		P3        24T       32T
+		P4        32T       40T
+		P5        40T       48T
+
+
+
+		average wait:20.0
+		average turn around:28.0
+
+
+
+		ELABORATION
+		[P0][P0][P0][P0][P0][P0][P0][P0][P1][P1][P1][P1][P1][P1][P1][P1][P2][P2][P2][P2][P2][P2][P2][P2][P3][P3][P3][P3][P3][P3][P3][P3][P4][P4][P4][P4][P4][P4][P4][P4][P5][P5][P5][P5][P5][P5][P5][P5]
+		T=0             T=4             T=8             T=12            T=16            T=20            T=24            T=28            T=32            T=36
+
+

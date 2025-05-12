@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+import os
+import sys
+import replacement_policies
+
+from collections import defaultdict
+from tlb import TLB
+from page_table import PageTableEntry
+
+
+# Global Constants
+TLB_SIZE = 16
+NUM_PAGES = 256
+PAGE_SIZE = 256
+BACKING_STORE_FILENAME = "BACKING_STORE.bin"
+
+# Just parse the CLI arguments
+def parse_args():
+	if len(sys.argv) != 4:
+		print("Usage: ./memSim <reference-sequence-file.txt> <FRAMES> <PRA>")
+		sys.exit(1)
+	
+	reference_file = sys.argv[1]
+
+	try:
+		# Physical RAM memory simulation
+		frames = int(sys.argv[2])
+		if frames <= 0 or frames > 256:
+			raise ValueError
+	except ValueError:
+		print("Error: Frames must be between 1 and 256")	
+
+	pra = sys.argv[3]
+	if pra not in {"FIFO", "LRU", "OPT"}: # Set literal lookup O(1) in contrast to list lookup O(n)
+		print("Error: PRA must be one of FIFO, LRU, or OPT.")
+		sys.exit(1)
+
+	return reference_file, frames, pra
+
+def read_reference_file(reference_file):
+	try:
+		with open(reference_file, 'rb') as file:
+			# List of int entries from the reference file
+			return [int(line.strip()) for line in file if line.strip()]
+	except:
+		print(f"Error: reference file {reference_file} not found")
+		sys.exit(1)
+
+def load_backing_store():
+	if not os.path.exists(BACKING_STORE_FILENAME):
+		print(f"Error: {BACKING_STORE_FILENAME} not found.")
+		sys.exit(1)
+	with open(BACKING_STORE_FILENAME, "rb") as file:
+		return file.read()
+
+def read_backing_store(backing_store, page_number):
+	start = page_number * PAGE_SIZE
+	return backing_store[start: start + PAGE_SIZE]
+
+def frame_to_hex(frame):
+	return ''.join(f"{byte:02x}" for byte in frame)
+
+def manage_memory(ref_file: str, t_frames: str, pra: str):
+	logical_addr = read_reference_file(ref_file)
+	backing_store = load_backing_store()
+
+	# Initialize TLB and Page size
+	tlb = TLB(TLB_SIZE)
+	page_table = PageTableEntry(PAGE_SIZE)
+
+	# Shape (16 x 256) Matrix
+	physical_ram_memory = [bytearray(PAGE_SIZE) for _ in range(t_frames)]
+	tlb_hit = tlb_miss = page_fault = next_frame = 0
+
+	# Set policy
+	policy = None
+	if (pra == "FIFO"):
+		policy = replacement_policies.FIFOReplacement()
+	elif (pra == "LRU"):
+		policy = replacement_policies.LRUReplacement()	
+	else:
+		future_indices = defaultdict(list)
+		policy = replacement_policies.OPTReplacement(future_indices=future_indices)
+
+	# Main flow
+	for idx, addr in enumerate(logical_addr):
+		# Get offset from logical addr
+		page_num, offset = tlb.get_page_offset(addr, PAGE_SIZE)
+
+		# Check TLB
+		frame_num = tlb.lookup(page_num)
+		if frame_num is not None:
+			tlb_hit += 1
+		else:	
+			valid = page_table.is_valid(page_num)
+			if valid:
+				frame_num = page_table.get_frame(page_num)
+			else:
+				# Page-Fault, load from backing...
+				page_fault += 1
+
+				# No more free frames in page table, lets evict
+				if next_frame >= t_frames:	
+					victim_page = policy.evict(idx)	
+					policy.remove(victim_page)	
+
+					# repurpose
+					frame_num = page_table.get_frame(victim_page)
+					page_table.remove_frame(victim_page)
+				else:
+					frame_num = next_frame 
+					next_frame += 1 # Move onto the next 'free' frame
+
+				# Load the address into the physical ram memory
+				# physical_ram_memory[frame_num] = read_backing_store(backing_store, page_num)
+				physical_ram_memory[frame_num][:] = read_backing_store(backing_store, page_num)
+
+				# Refill and update the policy
+				page_table.set_frame(page_num, frame_num)		
+			
+			# TLB-Miss now look for it in the page table
+			tlb_miss += 1
+			tlb.add(page_num, frame_num)
+			policy.add(page_num)
+			
+
+		
+		# Update time step for the accessed page (LRU and OPT)
+		policy.access(page_num, idx)
+				
+		# Convert to signed 8-bit value
+		value = physical_ram_memory[frame_num][offset]
+		if value >= 128:
+			value = value - 256	
+
+		frame_hex = ''.join(f'{b:02X}' for b in physical_ram_memory[frame_num])
+		print(f"{addr}, {value}, {frame_num}, {frame_hex}")
+
+	len_addr = len(logical_addr)
+	page_rate = (page_fault / len_addr)
+	tlb_rate = (tlb_hit / len_addr)	
+
+	return [page_fault, tlb_miss, len_addr, page_rate, tlb_rate, tlb_hit]
+
+def main():
+	reference_file, total_frames, pra = parse_args()
+
+	output = manage_memory(reference_file, total_frames, pra)
+
+	# This is to make the test.py work
+	print(f"Number of Translated Addresses = {output[2]}")
+	print(f"Page Faults = {output[0]}")
+	print(f"Page Fault Rate = {output[3]:.3f}")
+	print(f"TLB Hits = {output[5]}")
+	print(f"TLB Misses = {output[1]}")
+	print(f"TLB Hit Rate = {output[4]:.3f}")
+
+	return 0
+
+if __name__ == "__main__":
+	main()
+
+
