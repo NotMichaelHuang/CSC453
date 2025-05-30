@@ -111,7 +111,7 @@ class OPTReplacement:
             # find the first future index > current_time
             i = bisect.bisect_right(uses, current_time)
             if i >= len(uses):
-                # no more future uses → ideal victim
+                # no more future uses
                 return p
             # otherwise compare how far away its next use is
             if uses[i] > farthest_next:

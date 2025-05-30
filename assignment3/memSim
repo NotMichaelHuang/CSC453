@@ -41,7 +41,11 @@ def read_reference_file(reference_file):
 	try:
 		with open(reference_file, 'rb') as file:
 			# List of int entries from the reference file
-			return [int(line.strip()) for line in file if line.strip()]
+			ref_file = [int(line.strip()) for line in file if line.strip()]
+			if len(ref_file) == 0:
+				print("Error: empty reference_file")
+				sys.exit(1)
+			return ref_file
 	except:
 		print(f"Error: reference file {reference_file} not found")
 		sys.exit(1)
