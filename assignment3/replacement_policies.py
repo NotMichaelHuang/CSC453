@@ -52,7 +52,10 @@ class FIFOReplacement(ReplacementPolicies):
         pass
     
     def evict(self, current_time):
-        return self.queue.popleft() # remove/return
+        try:
+            return self.queue.popleft() # remove/return
+        except IndexError:
+            pass
     
     def remove(self, page):
         pass
