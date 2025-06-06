@@ -120,6 +120,7 @@ def manage_memory(ref_file: str, t_frames: str, pra: str):
 			
 			# TLB-Miss now look for it in the page table
 			tlb_miss += 1
+			tlb.invalidate(page_num)
 			tlb.add(page_num, frame_num)
 			policy.add(page_num)
 			

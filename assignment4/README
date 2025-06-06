@@ -1,0 +1,58 @@
+Michael Huang
+
+My TinyFS:
+    It operates on a fix size block of 256 bytes. 
+    Super Block: holds the magic number, root node ptr, and records free/used blocks.
+    Root Node: contains directory entries 8 bytes for filename and 1 for ptr.
+    Inode blocks: for metadata and data blocks.
+
+    Format: Creates the disk file, initializes all blocks to zero. Writes the superblock and an empty root directory.
+            Marks all blocks as free in the bitmap, except for the superblock and root directory which are marked as used.  
+
+    Mount: Loads the superblock, verifies the magic number, and prepares the system for use.
+
+    Creating & Opening a File:
+        Searches the root directory for the file.
+        If found, creates a file descriptor mapping for it.
+        If not found:
+            Allocates a new inode block and adds an entry to the root directory.
+            Sets the new file’s metadata and returns its fd.
+
+    Writing to a File:
+        Checks the inode for an existing data block, or allocates a new one.
+        Writes up to BLOCKSIZE (256) bytes of data into that block.
+        Updates the inode’s file size and data block pointer.
+        Updates the bitmap to mark the data block as used.
+    
+    Reading from a File:
+        Reads the inode to find the data block and file size.
+        Reads bytes from the data block, advancing the file pointer as needed.
+
+    Seeking:
+        Moves the file’s pointer (for the FD) to a specified offset, if within bounds.
+
+    Deleting a File:
+        Removes the file’s entry from the root directory.
+        Zeros out the inode and data blocks.
+        Marks those blocks as free in the bitmap.
+
+    Directory Listing:
+        Scans the root directory, returning all current file names.
+
+    ---------------------------
+    Additional Functionalities:
+    ---------------------------
+    Renaming:
+        Searches for the old file name in the directory, ensures the new name is available, then updates the directory entry.
+
+    Defragmentation:
+        Moves data blocks to be packed immediately after inode blocks, updating inode pointers and the bitmap to keep the file system compact.
+
+    Some limitation:
+        No subdir
+        small file dir
+        No permissions
+        No timestamps
+        Fixed blocksizes
+        No file links
+
