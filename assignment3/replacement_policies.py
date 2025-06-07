@@ -85,26 +85,28 @@ class OPTReplacement:
     def __init__(self, future_indices: dict[int, list[int]]):
         """
         future_indices: 
-          page_num → sorted list of upcoming reference indices for that page
+          page_num -> sorted list of upcoming reference indices for that page
         """
         self.future = future_indices
         self.pages = set()  # pages currently resident in RAM
 
     def add(self, page: int) -> None:
-        """Call this when you load a new page into a frame."""
+        """
+            Call this when you load a new page into a frame.
+        """
         self.pages.add(page)
 
     def access(self, page: int, time: int) -> None:
         """
-        OPT doesn’t need per-access tracking, so this is a no-op.
-        We keep it here so all policies share the same interface.
+            OPT doesn’t need per-access tracking, so this is a no-op.
+            We keep it here so all policies share the same interface.
         """
         pass
 
     def evict(self, current_time: int) -> int:
         """
-        Return the page whose *next* use is farthest in the future,
-        or one that’s never used again.
+            Return the page whose *next* use is farthest in the future,
+            or one that’s never used again.
         """
         victim = None
         farthest_next = -1
@@ -124,6 +126,8 @@ class OPTReplacement:
         return victim
 
     def remove(self, page: int) -> None:
-        """Call this after you evict a page to clean up state."""
+        """
+            Call this after you evict a page to clean up state.
+        """
         self.pages.remove(page)
 
